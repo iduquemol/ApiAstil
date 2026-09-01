@@ -1,0 +1,6 @@
+@ApiAstil_HostAddress = http://localhost:5291
+
+GET {{ApiAstil_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
