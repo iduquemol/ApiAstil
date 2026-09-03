@@ -14,5 +14,8 @@
     "Endpoint": "/enviar-dian",
     "EndpointNC": "/enviar-nota-dian",
     "ApiKey": "tu-api-key-aqui"
+  },
+  "Cors": {
+    "AllowedOrigins": []
   }
 }
