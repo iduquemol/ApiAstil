@@ -21,6 +21,19 @@ namespace ApiAstil.Services
                 ?? throw new InvalidOperationException("Connection string not found");
         }
 
+        public async Task<string?> GenerarFacturaXmlAsync(string folio)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var xmlResult = await connection.QueryFirstOrDefaultAsync<string>(
+                "usr_sp_itq_GenerarFacturaXML",
+                new { Folio = folio },
+                commandType: CommandType.StoredProcedure
+            );
+
+            return xmlResult;
+        }
+
         public async Task<IEnumerable<FacturaRecord>> GetFacturasAsync(DateOnly fechaIni, DateOnly fechaFin)
         {
             using var connection = new SqlConnection(_connectionString);
