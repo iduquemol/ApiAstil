@@ -14,3 +14,6 @@ ApiAstil/appsettings.json
 ## OS
 .DS_Store
 Thumbs.db
+
+## OpenSpec change history (active + archived) - not tracked in git
+openspec/changes/
