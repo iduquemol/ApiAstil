@@ -9,10 +9,50 @@ namespace ApiAstil.Controllers
     public class FacturasController : ControllerBase
     {
         private readonly IFacturasRepository _facturasRepository;
+        private readonly IConfiguration _configuration;
+        private readonly HttpClient _httpClient;
 
-        public FacturasController(IFacturasRepository facturasRepository)
+        public FacturasController(
+            IFacturasRepository facturasRepository,
+            IConfiguration configuration,
+            HttpClient httpClient)
         {
             _facturasRepository = facturasRepository;
+            _configuration = configuration;
+            _httpClient = httpClient;
+        }
+
+        /// <summary>
+        /// Envía el XML de una factura a Factura1
+        /// </summary>
+        private async Task<HttpResponseMessage> EnviarFacturaApiAsync(string xmlContent, string token)
+        {
+            var baseUrl = _configuration["Factura1:BaseUrl"];
+            var requestUrl = $"{baseUrl}/v2/factura";
+
+            // 1. Convertir el contenido del XML a Base64
+            var xmlBytes = System.Text.Encoding.UTF8.GetBytes(xmlContent);
+            var base64Xml = Convert.ToBase64String(xmlBytes);
+
+            // 2. Armar el cuerpo del JSON
+            var payload = new Factura1SendRequest
+            {
+                Sucursal = _configuration["Factura1:Sucursal"] ?? "1", // Ajusta el valor según corresponda
+                Base64doc = base64Xml
+            };
+
+            // 3. Configurar la petición con la cabecera Authorization
+            using var request = new HttpRequestMessage(HttpMethod.Post, requestUrl);
+
+            // Si el proveedor pide el formato Bearer estándar:
+            request.Headers.TryAddWithoutValidation("Authorization", token);
+            // Si exige la cadena directa sin "Bearer ", usa esta alternativa en su lugar:
+            // request.Headers.TryAddWithoutValidation("Authorization", token);
+
+            request.Content = JsonContent.Create(payload);
+
+            // 4. Enviar solicitud
+            return await _httpClient.SendAsync(request);
         }
 
         /// <summary>
@@ -63,6 +103,76 @@ namespace ApiAstil.Controllers
 
             return Ok(xmlData);
         }
+
+        [HttpGet("probar-token")]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<string>> ProbarToken()
+        {
+            var token = await CallExternalApiAsync();
+
+            if (string.IsNullOrEmpty(token))
+            {
+                return BadRequest(new { mensaje = "No se pudo obtener el token de Factura1. Revisa las credenciales o la URL en appsettings.json." });
+            }
+
+            return Ok(new { token });
+        }
+
+        private async Task<string?> CallExternalApiAsync()
+        {
+            var baseUrl = _configuration["Factura1:BaseUrl"];
+            var authEndpoint = _configuration["Factura1:AuthEndpoint"];
+            var username = _configuration["Factura1:Username"];
+            var password = _configuration["Factura1:Password"];
+
+            var authPayload = new Factura1AuthRequest
+            {
+                Username = username ?? string.Empty,
+                Password = password ?? string.Empty
+            };
+
+            var requestUrl = $"{baseUrl}{authEndpoint}";
+            var response = await _httpClient.PostAsJsonAsync(requestUrl, authPayload);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<Factura1AuthResponse>();
+                return result?.Token;
+            }
+
+            return null;
+        }
+
+        [HttpPost("enviar-xml/{folio}")]
+        public async Task<IActionResult> EnviarFacturaXml(string folio)
+        {
+            // 1. Obtener XML del repositorio
+            var xmlData = await _facturasRepository.GenerarFacturaXmlAsync(folio);
+            if (string.IsNullOrEmpty(xmlData))
+            {
+                return NotFound(new { mensaje = $"No se encontró XML para el folio: {folio}" });
+            }
+
+            // 2. Obtener Token
+            var token = await CallExternalApiAsync();
+            if (string.IsNullOrEmpty(token))
+            {
+                return BadRequest(new { mensaje = "No se pudo autenticar con Factura1." });
+            }
+
+            // 3. Enviar a Factura1
+            var response = await EnviarFacturaApiAsync(xmlData, token);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                return Ok(new { mensaje = "Factura enviada correctamente", respuesta = responseBody });
+            }
+
+            return StatusCode((int)response.StatusCode, new { mensaje = "Error al enviar factura", detalle = responseBody });
+        }
+
     }
 }
 
