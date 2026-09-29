@@ -17,5 +17,12 @@
   },
   "Cors": {
     "AllowedOrigins": []
+  },
+  "Factura1": {
+    "BaseUrl": "https://qa.factura1.com.co",
+    "AuthEndpoint": "/authV2",
+    "Username": "tu-usuario",
+    "Password": "tu-password",
+    "Sucursal": "1"
   }
 }

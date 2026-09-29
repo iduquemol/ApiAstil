@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace ApiAstil.Models
 {
     /// <summary>
@@ -16,5 +18,19 @@ namespace ApiAstil.Models
         public string NombreCliente { get; init; } = string.Empty;
         public decimal Valor { get; init; }
         public int Estado { get; init; }
+
+        // JSON keys use snake_case ("ano_doc"/"per_doc"), which
+        // PropertyNameCaseInsensitive does NOT match against PascalCase
+        // property names (case-insensitivity ignores case, not
+        // underscores) - explicit JsonPropertyName is required here.
+        // The SP also returns these as JSON strings (e.g. "2026"), not
+        // numbers, hence AllowReadingFromString.
+        [JsonPropertyName("ano_doc")]
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+        public int? AnoDoc { get; init; }
+
+        [JsonPropertyName("per_doc")]
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+        public int? PerDoc { get; init; }
     }
 }
