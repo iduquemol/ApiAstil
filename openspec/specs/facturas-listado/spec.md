@@ -11,7 +11,7 @@ The system SHALL provide `GET /api/facturas` returning the facturas from the `us
 
 #### Scenario: Successful query
 - **WHEN** a client sends `GET /api/facturas?fechaIni=2026-01-01&fechaFin=2026-01-31`
-- **THEN** the system returns `200 OK` with a JSON array of facturas from `usr_sp_itq_consulta_fe` for that range, each with `marca`, `fecha`, `tipo`, `numero`, `nitCliente`, `nombreCliente`, `valor`, and `estado`
+- **THEN** the system returns `200 OK` with a JSON array of facturas from `usr_sp_itq_consulta_fe` for that range, each with `marca`, `fecha`, `tipo`, `numero`, `nitCliente`, `nombreCliente`, `valor`, `estado`, `anoDoc`, and `perDoc`
 
 #### Scenario: No facturas in range
 - **WHEN** the stored procedure's `venta` result is `NULL` for the given date range (its convention for "no matches")
@@ -30,7 +30,7 @@ The system SHALL serialize each factura as a JSON object with camelCase field na
 
 #### Scenario: Field mapping and casing
 - **WHEN** the system returns a factura in the response array
-- **THEN** its JSON fields are exactly `marca` (boolean), `fecha` (date, `yyyy-MM-dd`), `tipo` (string, trimmed of padding), `numero` (number), `nitCliente` (string), `nombreCliente` (string), `valor` (number), and `estado` (number, a raw status code)
+- **THEN** its JSON fields are exactly `marca` (boolean), `fecha` (date, `yyyy-MM-dd`), `tipo` (string, trimmed of padding), `numero` (number), `nitCliente` (string), `nombreCliente` (string), `valor` (number), `estado` (number, a raw status code), `anoDoc` (number or `null`), and `perDoc` (number or `null`)
 
 #### Scenario: `marca` defaults to unselected
 - **WHEN** the system returns a factura
@@ -39,3 +39,7 @@ The system SHALL serialize each factura as a JSON object with camelCase field na
 #### Scenario: `tipo` is trimmed
 - **WHEN** the stored procedure's underlying data contains a padded `tipo` value (e.g. `"20 "`)
 - **THEN** the system returns `tipo` with trailing whitespace removed (e.g. `"20"`)
+
+#### Scenario: `anoDoc`/`perDoc` may be null
+- **WHEN** the stored procedure returns `null` for `ano_doc` and/or `per_doc` for a factura
+- **THEN** the system returns `anoDoc` and/or `perDoc` as `null` in the response, rather than defaulting to `0` or omitting the field

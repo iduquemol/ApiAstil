@@ -10,5 +10,7 @@ namespace ApiAstil.Models
         public string NombreCliente { get; init; } = string.Empty;
         public decimal Valor { get; init; }
         public int Estado { get; init; }
+        public int? AnoDoc { get; init; }
+        public int? PerDoc { get; init; }
     }
 }

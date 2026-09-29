@@ -34,6 +34,34 @@ namespace ApiAstil.Services
             return xmlResult;
         }
 
+        public async Task GuardarRespuestaFacturaAsync(
+            int anoDoc,
+            int perDoc,
+            string tipo,
+            int numero,
+            string? codigoError,
+            string? valorError,
+            string? cufe,
+            string docRequest)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            await connection.ExecuteAsync(
+                "usr_sp_itq_respuesta",
+                new
+                {
+                    ano_doc = anoDoc,
+                    per_doc = perDoc,
+                    sub_tip = tipo,
+                    num_doc = numero,
+                    codigoError,
+                    valorError,
+                    cufe,
+                    doc_request = docRequest
+                },
+                commandType: CommandType.StoredProcedure);
+        }
+
         public async Task<IEnumerable<FacturaRecord>> GetFacturasAsync(DateOnly fechaIni, DateOnly fechaFin)
         {
             using var connection = new SqlConnection(_connectionString);
@@ -69,7 +97,9 @@ namespace ApiAstil.Services
                 NitCliente = raw.NitCliente,
                 NombreCliente = raw.NombreCliente,
                 Valor = raw.Valor,
-                Estado = raw.Estado
+                Estado = raw.Estado,
+                AnoDoc = raw.AnoDoc,
+                PerDoc = raw.PerDoc
             });
         }
     }
